@@ -1,4 +1,4 @@
-package com.webber.rxjavademo;
+package com.webber.rxjavademos;
 
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
@@ -14,10 +14,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.jakewharton.rxbinding.widget.RxTextView;
-import com.webber.rxjavademos.Cause;
-import com.webber.rxjavademos.R;
-import com.webber.rxjavademos.StudentBean;
-import com.webber.rxjavademos.StudentComparator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -99,9 +95,9 @@ public class MainActivity extends AppCompatActivity {
     //操作符示例
     private void demo11() {
         // 创建操作符
-        demo11_1();
+        //demo11_1();
         // 变换操作符
-        //demo11_2();
+        demo11_2();
         // 过滤操作符
         //demo11_3();
         // 组合操作符
@@ -317,6 +313,54 @@ public class MainActivity extends AppCompatActivity {
 
     //过滤连接符
     private void demo11_2() {
+        //demo11_2_1();
+        //FlatMap
+        //demo11_2_2();
+        //map
+        demo11_2_3();
+    }
+
+    //打印每一名学生任意一门课程成绩
+    private void demo11_2_3() {
+        Observable.from(getStudent())
+                .map(new Func1<StudentBean, Cause>() {
+                    @Override
+                    public Cause call(StudentBean studentBean) {
+                        return studentBean.getCauseList().get(generateRandom(0, studentBean.getCauseList().size()));
+                    }
+                }).subscribe(new Action1<Cause>() {
+            @Override
+            public void call(Cause cause) {
+                print("demo11_2_3", formatCause(cause));
+            }
+        });
+    }
+
+    //生成随机数
+    private int generateRandom(int min, int max) {
+        int rand = (int) (min + Math.random() * max);
+        print("generateRandom", rand + "");
+        return rand;
+    }
+
+    //打印每一名学生的每一门课程成绩
+    private void demo11_2_2() {
+        Observable.from(getStudent())
+                .flatMap(new Func1<StudentBean, Observable<Cause>>() {
+                    @Override
+                    public Observable<Cause> call(StudentBean studentBean) {
+                        print("demo11_2_2", studentBean.getName());
+                        return Observable.from(studentBean.getCauseList());
+                    }
+                }).subscribe(new Action1<Cause>() {
+            @Override
+            public void call(Cause cause) {
+                print("demo11_2_2", formatCause(cause));
+            }
+        });
+    }
+
+    private void demo11_2_1() {
         //TODO flatMap 无序输出 concatMap 有序输出
         //转换连接符 map flatMap concatMap
         Observable.just(1, 2, 3, 4)
@@ -336,25 +380,89 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    //TimeUnit
+    //MICROSECONDS 微秒
+    //MILLISECONDS 毫秒
+    //NANOSECONDS 纳秒
+    private void demo11_1_1_4() {
+        Observable.timer(1, TimeUnit.SECONDS)
+                .subscribe(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        print("demo11_1_1_4", aLong);
+                    }
+                });
+    }
+
     /**
      * 创建操作符demo
      */
     private void demo11_1() {
         //Create
-        demo11_1_1();
+        //demo11_1_1();
+        //From
+        //demo11_1_2();
+        //Just
+        //demo11_1_3();
+        //Timer
+        //demo11_1_1_4();
+        //Interval
+        demo11_1_1_5();
+
+    }
+
+    private void demo11_1_1_5() {
+        Observable.interval(1, TimeUnit.SECONDS).
+                filter(new Func1<Long, Boolean>() {
+                    @Override
+                    public Boolean call(Long aLong) {
+                        return aLong < 10;
+                    }
+                })
+                .subscribe(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        print("demo11_1_1_5", aLong);
+                    }
+                });
+    }
+
+
+    private void demo11_1_3() {
+        Observable.just(2, 4, 6, 23, 234, 1)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        print("demo11_1_3", integer);
+                    }
+                });
+    }
+
+    private void print(String tag, Object obj) {
+        Log.d(tag, obj + "");
+    }
+
+    private void demo11_1_2() {
+        Integer[] ints = {5, 4, 3, 8, 1};
+        Observable.from(ints)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        Log.d("demo11_1_2", integer + "");
+                    }
+                });
     }
 
     private void demo11_1_1() {
         Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
             public void call(Subscriber<? super Object> subscriber) {
-                subscriber.onNext("下一个");
+                subscriber.onNext("消息");
             }
         }).subscribe(new Action1<Object>() {
             @Override
             public void call(Object o) {
                 Log.d("demo11_1_1", (String) o);
-                Log.d("demo11_1_1", o.toString());
             }
         });
     }
