@@ -28,5 +28,11 @@
         android:id="@+id/demo_et"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
-    
+
+    <Button
+        android:id="@+id/demo_bt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/click"/>
+
 </LinearLayout>

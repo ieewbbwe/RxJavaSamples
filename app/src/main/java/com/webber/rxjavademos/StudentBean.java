@@ -17,6 +17,10 @@ public class StudentBean {
         return unity;
     }
 
+    public void setMale(boolean male) {
+        isMale = male;
+    }
+
     public void setUnity(String unity) {
         this.unity = unity;
     }

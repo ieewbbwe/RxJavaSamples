@@ -9,10 +9,13 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.jakewharton.rxbinding.view.RxView;
 import com.jakewharton.rxbinding.widget.RxTextView;
 
 import java.io.IOException;
@@ -31,7 +34,10 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.functions.Func2;
+import rx.internal.operators.OperatorMap;
 import rx.observables.GroupedObservable;
+import rx.plugins.RxJavaPlugins;
 import rx.schedulers.Schedulers;
 
 import static rx.Observable.from;
@@ -41,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mDemoTv;
     private ImageView mDemoIv;
     private EditText mDemoEt;
+    private Button mDemoBt;
     private String mDemoStr;
 
     @Override
@@ -50,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
         mDemoTv = (TextView) findViewById(R.id.demo_tv);
         mDemoIv = (ImageView) findViewById(R.id.demo_iv);
         mDemoEt = (EditText) findViewById(R.id.demo_et);
+        mDemoBt = (Button) findViewById(R.id.demo_bt);
         View.OnClickListener observer = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -97,11 +105,11 @@ public class MainActivity extends AppCompatActivity {
         // 创建操作符
         //demo11_1();
         // 变换操作符
-        demo11_2();
+        //demo11_2();
         // 过滤操作符
         //demo11_3();
         // 组合操作符
-        //demo11_4();
+        demo11_4();
 
         // 错误处理
         // 辅助操作
@@ -185,19 +193,37 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    //组合连接符
+    //过滤连接符
     private void demo11_3() {
+        //GroupBy
         //demo11_3_1();
+        //distinct 过滤重复项
         //demo11_3_2();
-        demo11_3_3();
+        //debounce
+        //demo11_3_3();
+        //throttleFirst
+        demo11_3_4();
     }
 
-    // 一段时间没有变化则发送事件
-    // TODO 例如百度搜索 一段时间没有输入采取查找关键字
+    //需求：防止按钮连续快速的点击
+    private void demo11_3_4() {
+        RxView.clicks(mDemoBt)
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<Void>() {
+                    @Override
+                    public void call(Void aVoid) {
+                        Log.d("demo11_3_4", "click");
+                        Toast.makeText(MainActivity.this, "click", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    // 一段时间没有变化则发送事件 0.5s 没有输入时则发送请求
     private void demo11_3_3() {
         RxTextView.textChanges(mDemoEt)
                 .debounce(500, TimeUnit.MILLISECONDS)
-                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
                 .filter(new Func1<CharSequence, Boolean>() {
                     @Override
                     public Boolean call(CharSequence charSequence) {
@@ -206,7 +232,8 @@ public class MainActivity extends AppCompatActivity {
                 }).subscribe(new Action1<CharSequence>() {
             @Override
             public void call(CharSequence charSequence) {
-                Log.d("demo11_3", charSequence.toString());
+                Log.d("demo11_3", charSequence.toString() + "thread:" + Thread.currentThread().getName());
+                Toast.makeText(MainActivity.this, charSequence.toString(), Toast.LENGTH_SHORT).show();
             }
         }, new Action1<Throwable>() {
             @Override
@@ -311,13 +338,173 @@ public class MainActivity extends AppCompatActivity {
         return sortMap;
     }
 
-    //过滤连接符
+    //变换连接符
     private void demo11_2() {
         //demo11_2_1();
         //FlatMap
         //demo11_2_2();
         //map
-        demo11_2_3();
+        //demo11_2_3();
+        //理解代理 将Integer转为String
+        // map实现
+        //demo11_2_4();
+        // life实现
+        //demo11_2_5();
+        // 原理实现
+        // demo11_2_6();
+        //TODO GroupBy  分组有问题
+        //demo11_2_7();
+        //Scan
+        demo11_2_8();
+    }
+
+    private void demo11_2_8() {
+        Observable.just(1, 2, 3, 4).scan(new Func2<Integer, Integer, Integer>() {
+            @Override
+            public Integer call(Integer integer, Integer integer2) {
+                print("demo11_2_8", "int1:" + integer + "int2:" + integer2);
+                return integer * integer2;
+            }
+        }).subscribe(new Action1<Integer>() {
+            @Override
+            public void call(Integer integer) {
+                print("demo11_2_8", integer);
+            }
+        });
+    }
+
+    //需求：将一批学生按照班级分组
+    //问题：并是不按照一个组一个集合的形式分的，而是依次发送数据，判断相同的放入一组，组别变更之后重新计算
+    private void demo11_2_7() {
+        Observable.from(getStudent())
+                .groupBy(new Func1<StudentBean, String>() {
+                    @Override
+                    public String call(StudentBean studentBean) {
+                        return studentBean.getUnity();
+                    }
+                }).subscribe(new Action1<GroupedObservable<String, StudentBean>>() {
+            @Override
+            public void call(GroupedObservable<String, StudentBean> stringStudentBeanGroupedObservable) {
+                print("demo11_2_7", stringStudentBeanGroupedObservable.getKey());
+                stringStudentBeanGroupedObservable.subscribe(new Action1<StudentBean>() {
+                    @Override
+                    public void call(StudentBean studentBean) {
+                        print("demo11_2_7", formatStudent(studentBean));
+                    }
+                });
+            }
+        });
+    }
+
+    private void demo11_2_5() {
+        Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                subscriber.onNext("123");
+            }
+        }).lift(new Observable.Operator<Integer, String>() {
+            @Override
+            public Subscriber<? super String> call(final Subscriber<? super Integer> subscriber) {
+                return new Subscriber<String>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        int value = Integer.parseInt(s) * 2;
+                        subscriber.onNext(value);
+                    }
+                };
+            }
+        }).subscribe(new Action1<Integer>() {
+            @Override
+            public void call(Integer integer) {
+                print("demo11_2_5", integer + "");
+            }
+        });
+    }
+
+    private void demo11_2_4() {
+        Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                subscriber.onNext(1);
+            }
+        }).map(new Func1<Integer, String>() {
+            @Override
+            public String call(Integer integer) {
+                return integer + "";
+            }
+        }).subscribe(new Action1<String>() {
+            @Override
+            public void call(String s) {
+                print("demo11_2_4", s);
+            }
+        });
+    }
+
+    private void demo11_2_6() {
+        final Observable.OnSubscribe oldOnSubScribe = new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                subscriber.onNext(1);
+            }
+        };
+        // 创建一个被观察者
+        Observable oldObservable = Observable.create(oldOnSubScribe);
+        // 创建一个观察者
+        final Subscriber oldSubscriber = new Subscriber<String>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(String o) {
+                print("demo11_2_6", o);
+            }
+        };
+        //--------变换  用一个新的Observable处理之后代替发送订阅
+        // 搞清楚几个问题
+        //1 发送，newObservable是如何拿到oldObservable发送的数据的  （OnSubscribe是什么？是如何发送数据的？Operator是什么？）
+        // 两个重要接口
+        // OnSubscribe 是一个接口，继承Action1 提供了一个void call(T t)方法
+        // Operator 是一个接口，继承Func1 提供了一个 R call(T t)方法
+        // 通过onLift得到了一个OperatorMap，在调用call(T t)，看下源码.可以看到这里的T就是一个Subscribe
+        // 这里是创建了一个newSubscriber 并在各回调方法中调用了传入的Subscriber的各方法
+        //2 变换，中间是怎么做到类型转换的
+        //3 接收，变换过后是如何通知oldSubscribe的
+        // 通过上述分析不难发现，newObservable这时已经具备了
+        //4 链式是如何体现的
+        Observable newObservable = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                Observable.Operator operator = RxJavaPlugins.getInstance().getObservableExecutionHook()
+                        .onLift(new OperatorMap<Integer, String>(new Func1<Integer, String>() {
+                            @Override
+                            public String call(Integer integer) {
+                                return integer + "";
+                            }
+                        }));
+                Subscriber newSubscribe = (Subscriber) operator.call(subscriber);
+                newSubscribe.onStart();
+                oldOnSubScribe.call(newSubscribe);
+            }
+        });
+        //---------
+        newObservable.subscribe(oldSubscriber);
     }
 
     //打印每一名学生任意一门课程成绩
@@ -827,12 +1014,14 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("network", "onStart" + Thread.currentThread().getName());
             }
         };
+
+        Log.d("demo1", "newSub" + stringSubscriber.toString());
         //创建被观察者
         Observable<String> observable = Observable.create(new Observable.OnSubscribe<String>() {
             @Override
             public void call(Subscriber<? super String> subscriber) {
                 //subscriber.onStart();
-                Log.d("network", "call" + Thread.currentThread().getName());
+                Log.d("demo1", "callSub" + subscriber.toString());
                 subscriber.onNext("item1");
                 subscriber.onNext("item2");
                 subscriber.onNext("item3");
@@ -842,5 +1031,6 @@ public class MainActivity extends AppCompatActivity {
         });//.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
         //订阅二者关系
         observable.subscribe(stringSubscriber);
+        Log.d("demo1", "subscribeSub" + stringSubscriber.toString());
     }
 }
