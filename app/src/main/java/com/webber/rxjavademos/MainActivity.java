@@ -97,7 +97,13 @@ public class MainActivity extends AppCompatActivity {
         //练手示例 利用RxJava 实现三级联动
 
         //进阶示例 -操作符
-        demo11();
+        //demo11();
+        //自定义操作符
+        demo12();
+    }
+
+    private void demo12() {
+        
     }
 
     //操作符示例
