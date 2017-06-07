@@ -17,7 +17,7 @@
         android:id="@+id/demo_tv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"/>
+        android:text="开始计时"/>
 
     <ImageView
         android:id="@+id/demo_iv"
@@ -26,6 +26,7 @@
 
     <android.support.design.widget.TextInputEditText
         android:id="@+id/demo_et"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
@@ -33,6 +34,7 @@
         android:id="@+id/demo_bt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:text="@string/click"/>
 
 </LinearLayout>

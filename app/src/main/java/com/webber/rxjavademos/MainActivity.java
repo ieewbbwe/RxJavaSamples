@@ -97,13 +97,13 @@ public class MainActivity extends AppCompatActivity {
         //练手示例 利用RxJava 实现三级联动
 
         //进阶示例 -操作符
-        //demo11();
+        demo11();
         //自定义操作符
-        demo12();
+        //demo12();
     }
 
     private void demo12() {
-        
+
     }
 
     //操作符示例
@@ -135,8 +135,40 @@ public class MainActivity extends AppCompatActivity {
         list2.add("b");
         list2.add("c");
         list2.add("d");
+        mDemoTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // 需求：倒计时
+                final int countTime = 10;
+                Observable.interval(0, 1, TimeUnit.SECONDS)
+                        .take(countTime + 1)
+                        .map(new Func1<Long, Long>() {
+                            @Override
+                            public Long call(Long aLong) {
+                                return countTime - aLong;
+                            }
+                        })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Observer<Long>() {
+                            @Override
+                            public void onCompleted() {
+                                mDemoTv.setText("时间到！");
+                            }
 
-        //一秒执行一次切三秒获取一次发送的事件  防抖动
+                            @Override
+                            public void onError(Throwable e) {
+
+                            }
+
+                            @Override
+                            public void onNext(Long aLong) {
+                                mDemoTv.setText("倒计时" + aLong + "s");
+                            }
+                        });
+            }
+        });
+
+       /* //一秒执行一次切三秒获取一次发送的事件  防抖动
         Observable.interval(1, TimeUnit.SECONDS)
                 .throttleFirst(3, TimeUnit.SECONDS)
                 .subscribe(new Action1<Long>() {
@@ -144,9 +176,9 @@ public class MainActivity extends AppCompatActivity {
                     public void call(Long aLong) {
                         Log.d("demo11_4", getCurrentThreadName() + " " + aLong);
                     }
-                });
+                });*/
 
-        /*// 需求 计时 无法递减，无法在链中控制停止
+       /* // 需求 计时 无法递减，无法在链中控制停止
         Observable.interval(1000, 1000, TimeUnit.MILLISECONDS)
                 .delay(10, TimeUnit.SECONDS)
                 .subscribe(new Action1<Long>() {
